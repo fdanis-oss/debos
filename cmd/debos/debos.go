@@ -204,16 +204,6 @@ func main() {
 		return
 	}
 
-	if options.Verbose {
-		log.Println("Internal actions dump:")
-		DumpActions(reflect.ValueOf(r).Interface(), 0)
-	}
-
-	if options.DryRun {
-		log.Printf("==== Recipe done (Dry run) ====")
-		return
-	}
-
 	/* If fakemachine is supported the outer fake machine will never use the
 	 * scratchdir, so just set it to /scratch as a dummy to prevent the
 	 * outer debos creating a temporary direction */
@@ -279,6 +269,16 @@ func main() {
 		if exitcode = checkError(&context, err, a, "Verify"); exitcode != 0 {
 			return
 		}
+	}
+
+	if options.Verbose {
+		log.Println("Internal actions dump:")
+		DumpActions(reflect.ValueOf(r).Interface(), 0)
+	}
+
+	if options.DryRun {
+		log.Printf("==== Recipe done (Dry run) ====")
+		return
 	}
 
 	if !fakemachine.InMachine() && fakemachine.Supported() {
