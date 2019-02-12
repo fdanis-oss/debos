@@ -38,6 +38,7 @@ type DebosContext struct {
 	State           DebosState
 	EnvironVars     map[string]string
 	TemplateVars    map[string]string
+	PrintRecipe     bool
 }
 
 type Action interface {
