@@ -1,4 +1,4 @@
-package recipe_test
+package actions_test
 
 import (
 	"github.com/go-debos/debos/recipe"
@@ -50,7 +50,7 @@ actions:
   - action: apt
   - action: debootstrap
   - action: download
-  - action: filesystem-deploy 
+  - action: filesystem-deploy
   - action: image-partition
   - action: ostree-commit
   - action: ostree-deploy

@@ -57,17 +57,19 @@ Supported actions
 
 - raw -- https://godoc.org/github.com/go-debos/debos/actions#hdr-Raw_Action
 
+- recipe -- https://godoc.org/github.com/go-debos/debos/actions#hdr-Recipe_Action
+
 - run -- https://godoc.org/github.com/go-debos/debos/actions#hdr-Run_Action
 
 - unpack -- https://godoc.org/github.com/go-debos/debos/actions#hdr-Unpack_Action
 */
-package recipe
+package actions
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/go-debos/debos"
-	"github.com/go-debos/debos/actions"
+//	"github.com/go-debos/debos/actions"
 	"gopkg.in/yaml.v2"
 	"path"
 	"text/template"
@@ -96,29 +98,31 @@ func (y *YamlAction) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	switch aux.Action {
 	case "debootstrap":
-		y.Action = actions.NewDebootstrapAction()
+		y.Action = NewDebootstrapAction()
 	case "pack":
-		y.Action = &actions.PackAction{}
+		y.Action = &PackAction{}
 	case "unpack":
-		y.Action = &actions.UnpackAction{}
+		y.Action = &UnpackAction{}
 	case "run":
-		y.Action = &actions.RunAction{}
+		y.Action = &RunAction{}
 	case "apt":
-		y.Action = &actions.AptAction{}
+		y.Action = &AptAction{}
 	case "ostree-commit":
-		y.Action = &actions.OstreeCommitAction{}
+		y.Action = &OstreeCommitAction{}
 	case "ostree-deploy":
-		y.Action = actions.NewOstreeDeployAction()
+		y.Action = NewOstreeDeployAction()
 	case "overlay":
-		y.Action = &actions.OverlayAction{}
+		y.Action = &OverlayAction{}
 	case "image-partition":
-		y.Action = &actions.ImagePartitionAction{}
+		y.Action = &ImagePartitionAction{}
 	case "filesystem-deploy":
-		y.Action = actions.NewFilesystemDeployAction()
+		y.Action = NewFilesystemDeployAction()
 	case "raw":
-		y.Action = &actions.RawAction{}
+		y.Action = &RawAction{}
 	case "download":
-		y.Action = &actions.DownloadAction{}
+		y.Action = &DownloadAction{}
+	case "recipe":
+		y.Action = &RecipeAction{}
 	default:
 		return fmt.Errorf("Unknown action: %v", aux.Action)
 	}
