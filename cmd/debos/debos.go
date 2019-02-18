@@ -189,6 +189,8 @@ func main() {
 		context.DebugShell = options.Shell
 	}
 
+	context.TemplateVars = options.TemplateVars
+
 	file := args[0]
 	file = debos.CleanPath(file)
 

@@ -37,6 +37,7 @@ type DebosContext struct {
 	Origins         map[string]string
 	State           DebosState
 	EnvironVars     map[string]string
+	TemplateVars    map[string]string
 }
 
 type Action interface {
