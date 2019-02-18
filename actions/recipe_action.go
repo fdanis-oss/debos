@@ -38,7 +38,7 @@ type RecipeAction struct {
 	Inherits         string
 	Variables        map[string]string
 	Actions          Recipe
-	templateVars     map[string]string
+	context          debos.DebosContext
 }
 
 func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
@@ -46,34 +46,37 @@ func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
 		return errors.New("'recipe' property can't be empty")
 	}
 
+	recipe.context = *context
+
 	file := recipe.Recipe
 	if !filepath.IsAbs(file) {
 		file = filepath.Clean(context.RecipeDir + "/" + recipe.Recipe)
 	}
+	recipe.context.RecipeDir = filepath.Dir(file)
 
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return err
 	}
 
 	// Initialise template vars
-	recipe.templateVars = make(map[string]string)
-	recipe.templateVars["included_recipe"] = "true"
+	recipe.context.TemplateVars = make(map[string]string)
+	recipe.context.TemplateVars["included_recipe"] = "true"
 
 	if recipe.Inherits == "true" {
-		recipe.templateVars["architecture"] = context.Architecture
+		recipe.context.TemplateVars["architecture"] = context.Architecture
 
 		// Add parents vars to template vars
 		for k, v := range context.TemplateVars {
-			recipe.templateVars[k] = v
+			recipe.context.TemplateVars[k] = v
 		}
 	}
 
 	// Add Variables to template vars
 	for k, v := range recipe.Variables {
-		recipe.templateVars[k] = v
+		recipe.context.TemplateVars[k] = v
 	}
 
-	if err := recipe.Actions.Parse(file, context.PrintRecipe, recipe.templateVars); err != nil {
+	if err := recipe.Actions.Parse(file, recipe.context.PrintRecipe, recipe.context.TemplateVars); err != nil {
 		return err
 	}
 
@@ -82,7 +85,7 @@ func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
 	}
 
 	for _, a := range recipe.Actions.Actions {
-		if err := a.Verify(context); err != nil {
+		if err := a.Verify(&recipe.context); err != nil {
 			return err
 		}
 	}
@@ -94,7 +97,7 @@ func (recipe *RecipeAction) PreMachine(context *debos.DebosContext, m *fakemachi
 	// TODO: check args?
 
 	for _, a := range recipe.Actions.Actions {
-		if err := a.PreMachine(context, m, args); err != nil {
+		if err := a.PreMachine(&recipe.context, m, args); err != nil {
 			return err
 		}
 	}
@@ -104,7 +107,7 @@ func (recipe *RecipeAction) PreMachine(context *debos.DebosContext, m *fakemachi
 
 func (recipe *RecipeAction) PreNoMachine(context *debos.DebosContext) error {
 	for _, a := range recipe.Actions.Actions {
-		if err := a.PreNoMachine(context); err != nil {
+		if err := a.PreNoMachine(&recipe.context); err != nil {
 			return err
 		}
 	}
@@ -116,7 +119,7 @@ func (recipe *RecipeAction) Run(context *debos.DebosContext) error {
 	recipe.LogStart()
 
 	for _, a := range recipe.Actions.Actions {
-		if err := a.Run(context); err != nil {
+		if err := a.Run(&recipe.context); err != nil {
 			return err
 		}
 	}
@@ -126,7 +129,7 @@ func (recipe *RecipeAction) Run(context *debos.DebosContext) error {
 
 func (recipe *RecipeAction) Cleanup(context *debos.DebosContext) error {
 	for _, a := range recipe.Actions.Actions {
-		if err := a.Cleanup(context); err != nil {
+		if err := a.Cleanup(&recipe.context); err != nil {
 			return err
 		}
 	}
@@ -136,7 +139,7 @@ func (recipe *RecipeAction) Cleanup(context *debos.DebosContext) error {
 
 func (recipe *RecipeAction) PostMachine(context *debos.DebosContext) error {
 	for _, a := range recipe.Actions.Actions {
-		if err := a.PostMachine(context); err != nil {
+		if err := a.PostMachine(&recipe.context); err != nil {
 			return err
 		}
 	}
@@ -146,7 +149,7 @@ func (recipe *RecipeAction) PostMachine(context *debos.DebosContext) error {
 
 func (recipe *RecipeAction) PostMachineCleanup(context *debos.DebosContext) error {
 	for _, a := range recipe.Actions.Actions {
-		if err := a.PostMachineCleanup(context); err != nil {
+		if err := a.PostMachineCleanup(&recipe.context); err != nil {
 			return err
 		}
 	}
