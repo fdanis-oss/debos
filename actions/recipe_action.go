@@ -6,7 +6,6 @@ Include a recipe.
 Yaml syntax:
  - action: recipe
    recipe: path to recipe
-   inherit: bool
    variables:
      key: value
 
@@ -15,9 +14,6 @@ Mandatory properties:
 - recipe -- includes the recipe actions at the given path.
 
 Optional properties:
-
-- inherit -- inherits the template variables of the parent
-The default value is 'false' in case if this property is omitted.
 
 - variables -- overrides or adds new template variables.
 
@@ -35,7 +31,6 @@ import (
 type RecipeAction struct {
 	debos.BaseAction `yaml:",inline"`
 	Recipe           string
-	Inherits         string
 	Variables        map[string]string
 	Actions          Recipe
 	context          debos.DebosContext
@@ -61,15 +56,7 @@ func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
 	// Initialise template vars
 	recipe.context.TemplateVars = make(map[string]string)
 	recipe.context.TemplateVars["included_recipe"] = "true"
-
-	if recipe.Inherits == "true" {
-		recipe.context.TemplateVars["architecture"] = context.Architecture
-
-		// Add parents vars to template vars
-		for k, v := range context.TemplateVars {
-			recipe.context.TemplateVars[k] = v
-		}
-	}
+	recipe.context.TemplateVars["architecture"] = context.Architecture
 
 	// Add Variables to template vars
 	for k, v := range recipe.Variables {
