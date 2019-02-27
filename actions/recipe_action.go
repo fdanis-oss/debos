@@ -22,6 +22,7 @@ package actions
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"github.com/go-debos/debos"
@@ -60,6 +61,10 @@ func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
 
 	// Add Variables to template vars
 	for k, v := range recipe.Variables {
+		if k == "architecture" {
+			recipe.context.Architecture = v
+		}
+
 		recipe.context.TemplateVars[k] = v
 	}
 
@@ -67,8 +72,8 @@ func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
 		return err
 	}
 
-	if context.Architecture != recipe.Actions.Architecture {
-		return errors.New("Parent and included recipe should share the same architecture")
+	if recipe.context.Architecture != recipe.Actions.Architecture {
+		return fmt.Errorf("Expect architecture '%s' but got '%s'", recipe.context.Architecture, recipe.Actions.Architecture)
 	}
 
 	for _, a := range recipe.Actions.Actions {
