@@ -61,7 +61,7 @@ func (recipe *RecipeAction) Verify(context *debos.DebosContext) error {
 		recipe.templateVars[k] = v
 	}
 
-	if err := recipe.Actions.Parse(file, context.PrintRecipe, context.Verbose, recipe.templateVars); err != nil {
+	if err := recipe.Actions.Parse(file, context.Debos.PrintRecipe, context.Debos.Verbose, recipe.templateVars); err != nil {
 		return err
 	}
 

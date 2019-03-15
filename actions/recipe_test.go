@@ -314,7 +314,8 @@ actions:
 }
 
 func runTestWithSubRecipes(t *testing.T, test testSubRecipe, templateVars ...map[string]string) actions.Recipe {
-	var context debos.DebosContext
+	var common debos.CommonContext
+	var context = debos.DebosContext { Debos: &common }
 	dir, err := ioutil.TempDir("", "go-debos")
 	assert.Empty(t, err)
 	defer os.RemoveAll(dir)

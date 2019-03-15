@@ -93,7 +93,7 @@ func (d *DebootstrapAction) RunSecondStage(context debos.DebosContext) error {
 	err := c.Run("Debootstrap (stage 2)", cmdline...)
 
 	if (err != nil) {
-		log := path.Join(context.Rootdir, "debootstrap/debootstrap.log")
+		log := path.Join(context.Debos.Rootdir, "debootstrap/debootstrap.log")
 		_ = debos.Command{}.Run("debootstrap.log", "cat", log)
 	}
 
@@ -140,14 +140,14 @@ func (d *DebootstrapAction) Run(context *debos.DebosContext) error {
 	}
 
 	cmdline = append(cmdline, d.Suite)
-	cmdline = append(cmdline, context.Rootdir)
+	cmdline = append(cmdline, context.Debos.Rootdir)
 	cmdline = append(cmdline, d.Mirror)
 	cmdline = append(cmdline, "/usr/share/debootstrap/scripts/unstable")
 
 	err := debos.Command{}.Run("Debootstrap", cmdline...)
 
 	if err != nil {
-		log := path.Join(context.Rootdir, "debootstrap/debootstrap.log")
+		log := path.Join(context.Debos.Rootdir, "debootstrap/debootstrap.log")
 		_ = debos.Command{}.Run("debootstrap.log", "cat", log)
 		return err
 	}
@@ -160,7 +160,7 @@ func (d *DebootstrapAction) Run(context *debos.DebosContext) error {
 	}
 
 	/* HACK */
-	srclist, err := os.OpenFile(path.Join(context.Rootdir, "etc/apt/sources.list"),
+	srclist, err := os.OpenFile(path.Join(context.Debos.Rootdir, "etc/apt/sources.list"),
 		os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err

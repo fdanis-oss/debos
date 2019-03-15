@@ -39,7 +39,7 @@ type OverlayAction struct {
 }
 
 func (overlay *OverlayAction) Verify(context *debos.DebosContext) error {
-	if _, err := debos.RestrictedPath(context.Rootdir, overlay.Destination); err != nil {
+	if _, err := debos.RestrictedPath(context.Debos.Rootdir, overlay.Destination); err != nil {
 		return err
 	}
 	return nil
@@ -52,13 +52,13 @@ func (overlay *OverlayAction) Run(context *debos.DebosContext) error {
 	//Trying to get a filename from exports first
 	if len(overlay.Origin) > 0 {
 		var found bool
-		if origin, found = context.Origins[overlay.Origin]; !found {
+		if origin, found = context.Debos.Origins[overlay.Origin]; !found {
 			return fmt.Errorf("Origin not found '%s'", overlay.Origin)
 		}
 	}
 
 	sourcedir := path.Join(origin, overlay.Source)
-	destination, err := debos.RestrictedPath(context.Rootdir, overlay.Destination)
+	destination, err := debos.RestrictedPath(context.Debos.Rootdir, overlay.Destination)
 	if err != nil {
 		return err
 	}

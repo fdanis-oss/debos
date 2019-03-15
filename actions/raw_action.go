@@ -85,7 +85,7 @@ func (raw *RawAction) Verify(context *debos.DebosContext) error {
 
 func (raw *RawAction) Run(context *debos.DebosContext) error {
 	raw.LogStart()
-	origin, found := context.Origins[raw.Origin]
+	origin, found := context.Debos.Origins[raw.Origin]
 	if !found {
 		return fmt.Errorf("Origin `%s` doesn't exist\n", raw.Origin)
 	}
@@ -98,7 +98,7 @@ func (raw *RawAction) Run(context *debos.DebosContext) error {
 
 	var devicePath string
 	if raw.Partition != "" {
-		for _, p := range context.ImagePartitions {
+		for _, p := range context.Debos.ImagePartitions {
 			if p.Name == raw.Partition {
 				devicePath = p.DevicePath
 				break
@@ -109,7 +109,7 @@ func (raw *RawAction) Run(context *debos.DebosContext) error {
 			return fmt.Errorf("Failed to find partition named %s", raw.Partition)
 		}
 	} else {
-		devicePath = context.Image
+		devicePath = context.Debos.Image
 	}
 
 	target, err := os.OpenFile(devicePath, os.O_WRONLY, 0)

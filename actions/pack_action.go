@@ -32,8 +32,8 @@ type PackAction struct {
 
 func (pf *PackAction) Run(context *debos.DebosContext) error {
 	pf.LogStart()
-	outfile := path.Join(context.Artifactdir, pf.File)
+	outfile := path.Join(context.Debos.Artifactdir, pf.File)
 
 	log.Printf("Compression to %s\n", outfile)
-	return debos.Command{}.Run("Packing", "tar", "czf", outfile, "-C", context.Rootdir, ".")
+	return debos.Command{}.Run("Packing", "tar", "czf", outfile, "-C", context.Debos.Rootdir, ".")
 }

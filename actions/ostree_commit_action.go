@@ -79,9 +79,9 @@ func emptyDir(dir string) {
 
 func (ot *OstreeCommitAction) Run(context *debos.DebosContext) error {
 	ot.LogStart()
-	repoPath := path.Join(context.Artifactdir, ot.Repository)
+	repoPath := path.Join(context.Debos.Artifactdir, ot.Repository)
 
-	emptyDir(path.Join(context.Rootdir, "dev"))
+	emptyDir(path.Join(context.Debos.Rootdir, "dev"))
 
 	repo, err := otbuiltin.OpenRepo(repoPath)
 	if err != nil {
@@ -111,7 +111,7 @@ func (ot *OstreeCommitAction) Run(context *debos.DebosContext) error {
 	// Add values from 'ref-binding' if any
 	opts.RefBinding = append(opts.RefBinding, ot.RefBinding...)
 
-	ret, err := repo.Commit(context.Rootdir, ot.Branch, opts)
+	ret, err := repo.Commit(context.Debos.Rootdir, ot.Branch, opts)
 	if err != nil {
 		return err
 	} else {

@@ -50,25 +50,25 @@ func NewFilesystemDeployAction() *FilesystemDeployAction {
 }
 
 func (fd *FilesystemDeployAction) setupFSTab(context *debos.DebosContext) error {
-	if context.ImageFSTab.Len() == 0 {
+	if context.Debos.ImageFSTab.Len() == 0 {
 		return errors.New("Fstab not generated, missing image-partition action?")
 	}
 
 	log.Print("Setting up fstab")
 
-	err := os.MkdirAll(path.Join(context.Rootdir, "etc"), 0755)
+	err := os.MkdirAll(path.Join(context.Debos.Rootdir, "etc"), 0755)
 	if err != nil {
 		return fmt.Errorf("Couldn't create etc in image: %v", err)
 	}
 
-	fstab := path.Join(context.Rootdir, "etc/fstab")
+	fstab := path.Join(context.Debos.Rootdir, "etc/fstab")
 	f, err := os.OpenFile(fstab, os.O_RDWR|os.O_CREATE, 0755)
 
 	if err != nil {
 		return fmt.Errorf("Couldn't open fstab: %v", err)
 	}
 
-	_, err = io.Copy(f, &context.ImageFSTab)
+	_, err = io.Copy(f, &context.Debos.ImageFSTab)
 
 	if err != nil {
 		return fmt.Errorf("Couldn't write fstab: %v", err)
@@ -83,11 +83,11 @@ func (fd *FilesystemDeployAction) setupKernelCmdline(context *debos.DebosContext
 
 	log.Print("Setting up /etc/kernel/cmdline")
 
-	err := os.MkdirAll(path.Join(context.Rootdir, "etc", "kernel"), 0755)
+	err := os.MkdirAll(path.Join(context.Debos.Rootdir, "etc", "kernel"), 0755)
 	if err != nil {
 		return fmt.Errorf("Couldn't create etc/kernel in image: %v", err)
 	}
-	path := path.Join(context.Rootdir, "etc/kernel/cmdline")
+	path := path.Join(context.Debos.Rootdir, "etc/kernel/cmdline")
 	current, _ := ioutil.ReadFile(path)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 
@@ -96,7 +96,7 @@ func (fd *FilesystemDeployAction) setupKernelCmdline(context *debos.DebosContext
 	}
 
 	cmdline = append(cmdline, strings.TrimSpace(string(current)))
-	cmdline = append(cmdline, context.ImageKernelRoot)
+	cmdline = append(cmdline, context.Debos.ImageKernelRoot)
 
 	if fd.AppendKernelCmdline != "" {
 		cmdline = append(cmdline, fd.AppendKernelCmdline)
@@ -116,12 +116,12 @@ func (fd *FilesystemDeployAction) Run(context *debos.DebosContext) error {
 	/* Copying files is actually silly hafd, one has to keep permissions, ACL's
 	 * extended attribute, misc, other. Leave it to cp...
 	 */
-	err := debos.Command{}.Run("Deploy to image", "cp", "-a", context.Rootdir+"/.", context.ImageMntDir)
+	err := debos.Command{}.Run("Deploy to image", "cp", "-a", context.Debos.Rootdir+"/.", context.Debos.ImageMntDir)
 	if err != nil {
 		return fmt.Errorf("rootfs deploy failed: %v", err)
 	}
-	context.Rootdir = context.ImageMntDir
-	context.Origins["filesystem"] = context.ImageMntDir
+	context.Debos.Rootdir = context.Debos.ImageMntDir
+	context.Debos.Origins["filesystem"] = context.Debos.ImageMntDir
 
 	if fd.SetupFSTab {
 		err = fd.setupFSTab(context)

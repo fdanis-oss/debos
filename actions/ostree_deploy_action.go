@@ -86,7 +86,7 @@ func (ot *OstreeDeployAction) setupFSTab(deployment *ostree.Deployment, context 
 	deploymentDir := fmt.Sprintf("ostree/deploy/%s/deploy/%s.%d",
 		deployment.Osname(), deployment.Csum(), deployment.Deployserial())
 
-	etcDir := path.Join(context.Rootdir, deploymentDir, "etc")
+	etcDir := path.Join(context.Debos.Rootdir, deploymentDir, "etc")
 
 	err := os.Mkdir(etcDir, 0755)
 	if err != nil && !os.IsExist(err) {
@@ -99,7 +99,7 @@ func (ot *OstreeDeployAction) setupFSTab(deployment *ostree.Deployment, context 
 		return err
 	}
 
-	_, err = io.Copy(dst, &context.ImageFSTab)
+	_, err = io.Copy(dst, &context.Debos.ImageFSTab)
 
 	return err
 }
@@ -108,20 +108,20 @@ func (ot *OstreeDeployAction) Run(context *debos.DebosContext) error {
 	ot.LogStart()
 
 	// This is to handle cases there we didn't partition an image
-	if len(context.ImageMntDir) != 0 {
+	if len(context.Debos.ImageMntDir) != 0 {
 		/* First deploy the current rootdir to the image so it can seed e.g.
 		 * bootloader configuration */
-		err := debos.Command{}.Run("Deploy to image", "cp", "-a", context.Rootdir+"/.", context.ImageMntDir)
+		err := debos.Command{}.Run("Deploy to image", "cp", "-a", context.Debos.Rootdir+"/.", context.Debos.ImageMntDir)
 		if err != nil {
 			return fmt.Errorf("rootfs deploy failed: %v", err)
 		}
-		context.Rootdir = context.ImageMntDir
-		context.Origins["filesystem"] = context.ImageMntDir
+		context.Debos.Rootdir = context.Debos.ImageMntDir
+		context.Debos.Origins["filesystem"] = context.Debos.ImageMntDir
 	}
 
-	repoPath := "file://" + path.Join(context.Artifactdir, ot.Repository)
+	repoPath := "file://" + path.Join(context.Debos.Artifactdir, ot.Repository)
 
-	sysroot := ostree.NewSysroot(context.Rootdir)
+	sysroot := ostree.NewSysroot(context.Debos.Rootdir)
 	err := sysroot.InitializeFS()
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (ot *OstreeDeployAction) Run(context *debos.DebosContext) error {
 	 * whether it should configure /etc/ostree or the repo configuration,
 	   so reopen by hand */
 	/* dstRepo, err := sysroot.Repo(nil) */
-	dstRepo, err := ostree.OpenRepo(path.Join(context.Rootdir, "ostree/repo"))
+	dstRepo, err := ostree.OpenRepo(path.Join(context.Debos.Rootdir, "ostree/repo"))
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (ot *OstreeDeployAction) Run(context *debos.DebosContext) error {
 
 	var kargs []string
 	if ot.SetupKernelCmdline {
-		kargs = append(kargs, context.ImageKernelRoot)
+		kargs = append(kargs, context.Debos.ImageKernelRoot)
 	}
 
 	if ot.AppendKernelCmdline != "" {

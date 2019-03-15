@@ -73,12 +73,12 @@ func (pf *UnpackAction) Run(context *debos.DebosContext) error {
 	if len(pf.Origin) > 0 {
 		var found bool
 		//Trying to get a filename from origins first
-		origin, found = context.Origins[pf.Origin]
+		origin, found = context.Debos.Origins[pf.Origin]
 		if !found {
 			return fmt.Errorf("Origin not found '%s'", pf.Origin)
 		}
 	} else {
-		origin = context.Artifactdir
+		origin = context.Debos.Artifactdir
 	}
 
 	infile, err := debos.RestrictedPath(origin, pf.File)
@@ -96,5 +96,5 @@ func (pf *UnpackAction) Run(context *debos.DebosContext) error {
 		}
 	}
 
-	return archive.Unpack(context.Rootdir)
+	return archive.Unpack(context.Debos.Rootdir)
 }

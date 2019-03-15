@@ -20,7 +20,7 @@ func checkError(context *debos.DebosContext, err error, a debos.Action, stage st
 		return 0
 	}
 
-	context.State = debos.Failed
+	context.Debos.State = debos.Failed
 	log.Printf("Action `%s` failed at stage %s, error: %s", a, stage, err)
 	debos.DebugShell(*context)
 	return 1
@@ -57,7 +57,8 @@ func warnLocalhost(variable string, value string) {
 
 
 func main() {
-	var context debos.DebosContext
+	var common debos.CommonContext
+	var context = debos.DebosContext { Debos: &common }
 	var options struct {
 		ArtifactDir   string            `long:"artifactdir" description:"Directory for packed archives and ostree repositories (default: current directory)"`
 		InternalImage string            `long:"internal-image" hidden:"true"`
@@ -114,15 +115,15 @@ func main() {
 
 	// Set interactive shell binary only if '--debug-shell' options passed
 	if options.DebugShell {
-		context.DebugShell = options.Shell
+		context.Debos.DebugShell = options.Shell
 	}
 
 	if options.PrintRecipe {
-		context.PrintRecipe = options.PrintRecipe
+		context.Debos.PrintRecipe = options.PrintRecipe
 	}
 
 	if options.Verbose {
-		context.Verbose = options.Verbose
+		context.Debos.Verbose = options.Verbose
 	}
 
 	file := args[0]
@@ -144,49 +145,49 @@ func main() {
 	 * scratchdir, so just set it to /scratch as a dummy to prevent the
 	 * outer debos creating a temporary direction */
 	if fakemachine.InMachine() || fakemachine.Supported() {
-		context.Scratchdir = "/scratch"
+		context.Debos.Scratchdir = "/scratch"
 	} else {
 		log.Printf("fakemachine not supported, running on the host!")
 		cwd, _ := os.Getwd()
-		context.Scratchdir, err = ioutil.TempDir(cwd, ".debos-")
-		defer os.RemoveAll(context.Scratchdir)
+		context.Debos.Scratchdir, err = ioutil.TempDir(cwd, ".debos-")
+		defer os.RemoveAll(context.Debos.Scratchdir)
 	}
 
-	context.Rootdir = path.Join(context.Scratchdir, "root")
-	context.Image = options.InternalImage
+	context.Debos.Rootdir = path.Join(context.Debos.Scratchdir, "root")
+	context.Debos.Image = options.InternalImage
 	context.RecipeDir = path.Dir(file)
 
-	context.Artifactdir = options.ArtifactDir
-	if context.Artifactdir == "" {
-		context.Artifactdir, _ = os.Getwd()
+	context.Debos.Artifactdir = options.ArtifactDir
+	if context.Debos.Artifactdir == "" {
+		context.Debos.Artifactdir, _ = os.Getwd()
 	}
-	context.Artifactdir = debos.CleanPath(context.Artifactdir)
+	context.Debos.Artifactdir = debos.CleanPath(context.Debos.Artifactdir)
 
 	// Initialise origins map
-	context.Origins = make(map[string]string)
-	context.Origins["artifacts"] = context.Artifactdir
-	context.Origins["filesystem"] = context.Rootdir
-	context.Origins["recipe"] = context.RecipeDir
+	context.Debos.Origins = make(map[string]string)
+	context.Debos.Origins["artifacts"] = context.Debos.Artifactdir
+	context.Debos.Origins["filesystem"] = context.Debos.Rootdir
+	context.Debos.Origins["recipe"] = context.RecipeDir
 
 	context.Architecture = r.Architecture
 
-	context.State = debos.Success
+	context.Debos.State = debos.Success
 
 	// Initialize environment variables map
-	context.EnvironVars = make(map[string]string)
+	context.Debos.EnvironVars = make(map[string]string)
 
 	// First add variables from host
 	for _, e := range environ_vars {
 		lowerVar := strings.ToLower(e) // lowercase not really needed
 		lowerVal := os.Getenv(lowerVar)
 		if lowerVal != "" {
-			context.EnvironVars[lowerVar] = lowerVal
+			context.Debos.EnvironVars[lowerVar] = lowerVal
 		}
 
 		upperVar := strings.ToUpper(e)
 		upperVal := os.Getenv(upperVar)
 		if upperVal != "" {
-			context.EnvironVars[upperVar] = upperVal
+			context.Debos.EnvironVars[upperVar] = upperVal
 		}
 	}
 
@@ -194,9 +195,9 @@ func main() {
 	for k, v := range options.EnvironVars {
 		// Allows the user to unset environ variables with -e
 		if v == "" {
-			delete(context.EnvironVars, k)
+			delete(context.Debos.EnvironVars, k)
 		} else {
-			context.EnvironVars[k] = v
+			context.Debos.EnvironVars[k] = v
 		}
 	}
 
@@ -247,17 +248,17 @@ func main() {
 		m.SetShowBoot(options.ShowBoot)
 
 		// Puts in a format that is compatible with output of os.Environ()
-		if context.EnvironVars != nil {
+		if context.Debos.EnvironVars != nil {
 			EnvironString := []string{}
-			for k, v := range context.EnvironVars {
+			for k, v := range context.Debos.EnvironVars {
 				warnLocalhost(k, v)
 				EnvironString = append(EnvironString, fmt.Sprintf("%s=%s", k, v))
 			}
 			m.SetEnviron(EnvironString) // And save the resulting environ vars on m
 		}
 
-		m.AddVolume(context.Artifactdir)
-		args = append(args, "--artifactdir", context.Artifactdir)
+		m.AddVolume(context.Debos.Artifactdir)
+		args = append(args, "--artifactdir", context.Debos.Artifactdir)
 
 		for k, v := range options.TemplateVars {
 			args = append(args, "--template-var", fmt.Sprintf("%s:\"%s\"", k, v))
@@ -292,7 +293,7 @@ func main() {
 		}
 
 		if exitcode != 0 {
-			context.State = debos.Failed
+			context.Debos.State = debos.Failed
 			return
 		}
 
@@ -320,8 +321,8 @@ func main() {
 	}
 
 	// Create Rootdir
-	if _, err = os.Stat(context.Rootdir); os.IsNotExist(err) {
-		err = os.Mkdir(context.Rootdir, 0755)
+	if _, err = os.Stat(context.Debos.Rootdir); os.IsNotExist(err) {
+		err = os.Mkdir(context.Debos.Rootdir, 0755)
 		if err != nil && os.IsNotExist(err) {
 			exitcode = 1
 			return

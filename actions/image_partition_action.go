@@ -164,7 +164,7 @@ type ImagePartitionAction struct {
 }
 
 func (i *ImagePartitionAction) generateFSTab(context *debos.DebosContext) error {
-	context.ImageFSTab.Reset()
+	context.Debos.ImageFSTab.Reset()
 
 	for _, m := range i.Mountpoints {
 		options := []string{"defaults"}
@@ -176,7 +176,7 @@ func (i *ImagePartitionAction) generateFSTab(context *debos.DebosContext) error 
 		if m.part.FSUUID == "" {
 			return fmt.Errorf("Missing fs UUID for partition %s!?!", m.part.Name)
 		}
-		context.ImageFSTab.WriteString(fmt.Sprintf("UUID=%s\t%s\t%s\t%s\t0\t0\n",
+		context.Debos.ImageFSTab.WriteString(fmt.Sprintf("UUID=%s\t%s\t%s\t%s\t0\t0\n",
 			m.part.FSUUID, m.Mountpoint, m.part.FS,
 			strings.Join(options, ",")))
 	}
@@ -190,7 +190,7 @@ func (i *ImagePartitionAction) generateKernelRoot(context *debos.DebosContext) e
 			if m.part.FSUUID == "" {
 				return errors.New("No fs UUID for root partition !?!")
 			}
-			context.ImageKernelRoot = fmt.Sprintf("root=UUID=%s", m.part.FSUUID)
+			context.Debos.ImageKernelRoot = fmt.Sprintf("root=UUID=%s", m.part.FSUUID)
 			break
 		}
 	}
@@ -201,7 +201,7 @@ func (i *ImagePartitionAction) generateKernelRoot(context *debos.DebosContext) e
 func (i ImagePartitionAction) getPartitionDevice(number int, context debos.DebosContext) string {
 	/* Always look up canonical device as udev might not generate the by-id
 	 * symlinks while there is an flock on /dev/vda */
-	device, _ := filepath.EvalSymlinks(context.Image)
+	device, _ := filepath.EvalSymlinks(context.Debos.Image)
 
 	suffix := "p"
 	/* Check partition naming first: if used 'by-id'i naming convention */
@@ -226,7 +226,7 @@ func (i ImagePartitionAction) PreMachine(context *debos.DebosContext, m *fakemac
 		return err
 	}
 
-	context.Image = image
+	context.Debos.Image = image
 	*args = append(*args, "--internal-image", image)
 	return nil
 }
@@ -293,7 +293,7 @@ func (i *ImagePartitionAction) PreNoMachine(context *debos.DebosContext) error {
 	if err != nil {
 		return fmt.Errorf("Failed to setup loop device")
 	}
-	context.Image = i.loopDev.Path()
+	context.Debos.Image = i.loopDev.Path()
 	i.usingLoop = true
 
 	return nil
@@ -305,7 +305,7 @@ func (i ImagePartitionAction) Run(context *debos.DebosContext) error {
 	/* Exclusively Lock image device file to prevent udev from triggering
 	 * partition rescans, which cause confusion as some time asynchronously the
 	 * partition device might disappear and reappear due to that! */
-	imageFD, err := os.Open(context.Image)
+	imageFD, err := os.Open(context.Debos.Image)
 	if err != nil {
 		return err
 	}
@@ -319,7 +319,7 @@ func (i ImagePartitionAction) Run(context *debos.DebosContext) error {
 		return err
 	}
 
-	command := []string{"parted", "-s", context.Image, "mklabel", i.PartitionType}
+	command := []string{"parted", "-s", context.Debos.Image, "mklabel", i.PartitionType}
 	if len(i.GptGap) > 0 {
 		command = append(command, i.GptGap)
 	}
@@ -336,7 +336,7 @@ func (i ImagePartitionAction) Run(context *debos.DebosContext) error {
 			name = "primary"
 		}
 
-		command := []string{"parted", "-a", "none", "-s", "--", context.Image, "mkpart", name}
+		command := []string{"parted", "-a", "none", "-s", "--", context.Debos.Image, "mkpart", name}
 		switch p.FS {
 		case "vfat":
 			command = append(command, "fat32")
@@ -355,7 +355,7 @@ func (i ImagePartitionAction) Run(context *debos.DebosContext) error {
 
 		if p.Flags != nil {
 			for _, flag := range p.Flags {
-				err = debos.Command{}.Run("parted", "parted", "-s", context.Image, "set",
+				err = debos.Command{}.Run("parted", "parted", "-s", context.Debos.Image, "set",
 					fmt.Sprintf("%d", p.number), flag, "on")
 				if err != nil {
 					return err
@@ -370,15 +370,15 @@ func (i ImagePartitionAction) Run(context *debos.DebosContext) error {
 			return err
 		}
 
-		context.ImagePartitions = append(context.ImagePartitions,
+		context.Debos.ImagePartitions = append(context.Debos.ImagePartitions,
 			debos.Partition{p.Name, devicePath})
 	}
 
-	context.ImageMntDir = path.Join(context.Scratchdir, "mnt")
-	os.MkdirAll(context.ImageMntDir, 0755)
+	context.Debos.ImageMntDir = path.Join(context.Debos.Scratchdir, "mnt")
+	os.MkdirAll(context.Debos.ImageMntDir, 0755)
 	for _, m := range i.Mountpoints {
 		dev := i.getPartitionDevice(m.part.number, *context)
-		mntpath := path.Join(context.ImageMntDir, m.Mountpoint)
+		mntpath := path.Join(context.Debos.ImageMntDir, m.Mountpoint)
 		os.MkdirAll(mntpath, 0755)
 		err := syscall.Mount(dev, mntpath, m.part.FS, 0, "")
 		if err != nil {
@@ -402,7 +402,7 @@ func (i ImagePartitionAction) Run(context *debos.DebosContext) error {
 func (i ImagePartitionAction) Cleanup(context *debos.DebosContext) error {
 	for idx := len(i.Mountpoints) - 1; idx >= 0; idx-- {
 		m := i.Mountpoints[idx]
-		mntpath := path.Join(context.ImageMntDir, m.Mountpoint)
+		mntpath := path.Join(context.Debos.ImageMntDir, m.Mountpoint)
 		err := syscall.Unmount(mntpath, 0)
 		if err != nil {
 			log.Printf("Warning: Failed to get unmount %s: %s", m.Mountpoint, err)
@@ -443,9 +443,9 @@ func (i ImagePartitionAction) Cleanup(context *debos.DebosContext) error {
 }
 
 func (i ImagePartitionAction) PostMachineCleanup(context *debos.DebosContext) error {
-	image := path.Join(context.Artifactdir, i.ImageName)
+	image := path.Join(context.Debos.Artifactdir, i.ImageName)
 	/* Remove the image in case of any action failure */
-	if context.State != debos.Success {
+	if context.Debos.State != debos.Success {
 		if _, err := os.Stat(image); !os.IsNotExist(err) {
 			if err = os.Remove(image); err != nil {
 				return err

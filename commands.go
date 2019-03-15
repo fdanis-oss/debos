@@ -67,22 +67,22 @@ func (w *commandWrapper) flush() {
 }
 
 func NewChrootCommandForContext(context DebosContext) Command {
-	c := Command{Architecture: context.Architecture, Chroot: context.Rootdir, ChrootMethod: CHROOT_METHOD_NSPAWN}
+	c := Command{Architecture: context.Architecture, Chroot: context.Debos.Rootdir, ChrootMethod: CHROOT_METHOD_NSPAWN}
 
-	if context.EnvironVars != nil {
-		for k, v := range context.EnvironVars {
+	if context.Debos.EnvironVars != nil {
+		for k, v := range context.Debos.EnvironVars {
 			c.AddEnv(fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 
-	if context.Image != "" {
-		path, err := RealPath(context.Image)
+	if context.Debos.Image != "" {
+		path, err := RealPath(context.Debos.Image)
 		if err == nil {
 			c.AddBindMount(path, "")
 		} else {
-			log.Printf("Failed to get realpath for %s, %v", context.Image, err)
+			log.Printf("Failed to get realpath for %s, %v", context.Debos.Image, err)
 		}
-		for _, p := range context.ImagePartitions {
+		for _, p := range context.Debos.ImagePartitions {
 			path, err := RealPath(p.DevicePath)
 			if err != nil {
 				log.Printf("Failed to get realpath for %s, %v", p.DevicePath, err)

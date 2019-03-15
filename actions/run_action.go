@@ -117,12 +117,12 @@ func (run *RunAction) doRun(context debos.DebosContext) error {
 
 	if !run.PostProcess {
 		if !run.Chroot {
-			cmd.AddEnvKey("ROOTDIR", context.Rootdir)
+			cmd.AddEnvKey("ROOTDIR", context.Debos.Rootdir)
 			cmd.AddEnvKey("RECIPEDIR", context.RecipeDir)
-			cmd.AddEnvKey("ARTIFACTDIR", context.Artifactdir)
+			cmd.AddEnvKey("ARTIFACTDIR", context.Debos.Artifactdir)
 		}
-		if context.Image != "" {
-			cmd.AddEnvKey("IMAGE", context.Image)
+		if context.Debos.Image != "" {
+			cmd.AddEnvKey("IMAGE", context.Debos.Image)
 		}
 	}
 
